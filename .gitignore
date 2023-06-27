@@ -1,9 +1,2 @@
-/ostep-homework_directions
-/my_hw/cpu_process_api/prgm
-/my_hw/mechanism_LDE/main
-/my_hw/memory_api/null
-/my_hw/memory_api/sfree
-/my_hw/memory_api/smalloc
-/my_hw/memory_api/unfree
-/my_hw/memory_api/vec
-/Projects/ostep-projects/
+Homeworks/my_hw/bins/
+Projects/ostep-projects/
