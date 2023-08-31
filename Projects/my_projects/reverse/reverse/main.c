@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
     push(head, buff);
     buff = NULL; // For automatic allocation
   }
+  free(buff);
 
   // Last line
   Vec *rest = malloc(sizeof(Vec));
@@ -61,13 +62,13 @@ int main(int argc, char *argv[]) {
   push(head, inner(rest));
   free(rest);
 
-  //reverse(&head);
+  reverse(&head);
   print(head);
   printf("\n");
 
   // Cleaning up
   clean_up(head);
-  fclose(source);
+  //fclose(source);
   fclose(destination);
   return 0;
 }
