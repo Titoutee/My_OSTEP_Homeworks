@@ -1,9 +1,7 @@
 #include "services.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "vector.h"
-
-#define REST_SIZE 512
+#include "string.h"
 
 int main(int argc, char *argv[]) {
   if (argc > 3) {
@@ -12,93 +10,73 @@ int main(int argc, char *argv[]) {
   }
 
   if (argc == 3) {
-    if (argv[1] == argv[2]) {
-      fprintf(stderr, "Input and output file must differ\n");
+    if (*argv[1] == *argv[2]) {
+      fprintf(stderr, "reverse: input and output file must differ\n");
       exit(EXIT_FAILURE);
     }
   }
 
-  FILE *source = (argc == 2) ? fopen(argv[1], "r") : stdin;
-  FILE *destination = (argc == 3) ? fopen(argv[2], "r") : stdout;
+  FILE *source = (argc >= 2) ? fopen(argv[1], "r") : stdin;
+  FILE *destination = (argc >= 3) ? fopen(argv[2], "rw+") : stdout;
 
   if (source == NULL) {
-    fprintf(stderr, "error: cannot open file \'%s\'\n", argv[1]);
+    fprintf(stderr, "reverse: cannot open file \'%s\'\n", argv[1]);
     exit(EXIT_FAILURE);
   }
   if (destination == NULL) {
-    fprintf(stderr, "error: cannot open file \'%s\'\n", argv[2]);
+    fprintf(stderr, "reverse: cannot open file \'%s\'\n", argv[2]);
     exit(EXIT_FAILURE);
   }
 
   char *buff = NULL;
-  size_t buff_len = 0;
-  long n_read = getline(&buff, &buff_len, source);
-  if (n_read == -1) {
-    fprintf(stderr, "Cannot read line for some reason...");
-    exit(EXIT_FAILURE);
-  }
-  LinkedList *head = malloc(sizeof(LinkedList));
-  head->data = buff; // First node is first line, so we have our header
-  head->next = NULL;
+  size_t nread;
+  LinkedList *head = NULL;
 
-  // Reinit
-  buff = NULL;
-  buff_len = 0;
-
-  // Getline
-  while (getline(&buff, &buff_len, source) != -1) {
-    push(head, buff);
-    buff = NULL; // For automatic allocation
-  }
-  free(buff);
-
-  // Last line
-  Vec *rest = malloc(sizeof(Vec));
-  init_vec(rest);
-  char c;
-  while ((c = fgetc(source)) != EOF) {
-    vec_push(rest, c);
-  }
-  push(head, inner(rest));
-  free(rest);
-
-  reverse(&head);
-  print(head);
-  printf("\n");
+  while((nread = getline(&buff, &nread, source)) != -1) {
+    push(&head, buff, nread);
+  } 
+  print_normal(head, destination);
 
   // Cleaning up
+
+  free(buff);
   clean_up(head);
-  //fclose(source);
+  fclose(source);
   fclose(destination);
-  return 0;
+  exit(EXIT_SUCCESS);
 }
 
-void push(LinkedList *head,
-          char *data) { // Append an element to the linked list
-  LinkedList *current = head;
-
-  while (current->next != NULL) { // We go to end of our linked list
-    current = current->next;
-  }
-
-  current->next = (LinkedList *)malloc(sizeof(LinkedList));
-  if (current->next == NULL) {
-    fprintf(stderr, "malloc failed\n");
+// Pushed an element after head;
+void push(LinkedList **head,
+          char *data, size_t nread) { // Append an element to the linked list
+  LinkedList *new;
+  if((new = malloc(sizeof(LinkedList))) == NULL) {
+    perror("malloc failed\n");
     exit(EXIT_FAILURE);
   }
-  current = current->next;
-  current->data = data;
-  current->next = NULL;
+  new->data = strdup(data);
+  new->data[nread] = '\0'; // Consider a string
+  new->next = *head;
+  *head = new;
 }
 
-void print(LinkedList *head) {
+int len(LinkedList *head) {
   LinkedList *current = head;
-  // printf("HEAD->");
-  while (current->next != NULL) {
-    printf("%s", current->data);
+  int count = 0;
+  while (current != NULL) {
+    count++;
     current = current->next;
   }
-  // printf("NULL");
+  return count;
+}
+
+void print_normal(LinkedList *head, FILE *fp) {
+  LinkedList *current = head;
+
+  while (current != NULL) {
+    fprintf(fp, "%s", current->data);
+    current = current->next;
+  }
 }
 
 void clean_up(LinkedList *head) {
@@ -110,19 +88,6 @@ void clean_up(LinkedList *head) {
     free(current);  // Dangling here
     current = temp; // re-initialized
   }
+  free(current->data);
   free(current);
-}
-
-void reverse(LinkedList **head) {
-  LinkedList *current = *head;
-  LinkedList *prev = NULL;
-  LinkedList *next = NULL;
-
-  while (current != NULL) {
-    next = current->next;
-    current->next = prev;
-    prev = current;
-    current = next;
-  }
-  *head = prev; // Last node here, so prev is new head
 }
